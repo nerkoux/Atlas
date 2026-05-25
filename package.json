@@ -2,7 +2,7 @@
   "name": "atlas-architecture-explorer",
   "displayName": "Atlas — Architecture Explorer",
   "description": "Transforms repositories into navigable architectural systems. Google Maps for codebases.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "AtlasCodeVSC",
   "license": "MIT",
   "author": {
@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nerkoux/project-atlas.git"
+    "url": "https://github.com/nerkoux/atlas.git"
   },
   "bugs": {
-    "url": "https://github.com/nerkoux/project-atlas/issues"
+    "url": "https://github.com/nerkoux/atlas/issues"
   },
-  "homepage": "https://github.com/nerkoux/project-atlas#readme",
+  "homepage": "https://github.com/nerkoux/atlas#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
