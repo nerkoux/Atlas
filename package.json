@@ -1,0 +1,188 @@
+{
+  "name": "atlas-architecture-explorer",
+  "displayName": "Atlas — Architecture Explorer",
+  "description": "Transforms repositories into navigable architectural systems. Google Maps for codebases.",
+  "version": "0.1.0",
+  "publisher": "AtlasCodeVSC",
+  "license": "MIT",
+  "author": {
+    "name": "Atlas Contributors"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nerkoux/project-atlas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nerkoux/project-atlas/issues"
+  },
+  "homepage": "https://github.com/nerkoux/project-atlas#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Visualization"],
+  "keywords": ["architecture", "dependency", "graph", "explorer", "visualization", "codebase", "intelligence", "monorepo"],
+  "icon": "resources/atlaslogo.png",
+  "galleryBanner": {
+    "color": "#0f172a",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "atlas.openExplorer",
+        "title": "Atlas: Open Architecture Explorer",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "atlas.scanWorkspace",
+        "title": "Atlas: Scan Workspace",
+        "icon": "$(search)"
+      },
+      {
+        "command": "atlas.refreshGraph",
+        "title": "Atlas: Refresh Graph",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "atlas.focusFile",
+        "title": "Atlas: Focus Current File in Graph"
+      },
+      {
+        "command": "atlas.openGraph",
+        "title": "Atlas: Open Architecture Graph",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "atlas.tree.refresh",
+        "title": "Atlas: Refresh Architecture Tree",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "atlas.tree.openFile",
+        "title": "Atlas: Open File from Tree"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "atlas-sidebar",
+          "title": "Atlas",
+          "icon": "resources/atlas-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "atlas-sidebar": [
+        {
+          "type": "webview",
+          "id": "atlas.sidebarView",
+          "name": "Architecture Explorer",
+          "icon": "resources/atlas-icon.svg"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "atlas.explorerView",
+          "name": "Atlas Architecture",
+          "icon": "$(type-hierarchy)",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "atlas.focusFile",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "atlas.scanWorkspace",
+          "when": "view == atlas.sidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "atlas.refreshGraph",
+          "when": "view == atlas.sidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "atlas.openGraph",
+          "when": "view == atlas.sidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "atlas.tree.refresh",
+          "when": "view == atlas.explorerView",
+          "group": "navigation"
+        },
+        {
+          "command": "atlas.openGraph",
+          "when": "view == atlas.explorerView",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Atlas",
+      "properties": {
+        "atlas.scanDepth": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum directory depth to scan"
+        },
+        "atlas.excludePatterns": {
+          "type": "array",
+          "default": ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**", "**/.next/**", "**/__pycache__/**"],
+          "description": "Glob patterns to exclude from scanning"
+        },
+        "atlas.autoScan": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan workspace on open"
+        },
+        "atlas.languages": {
+          "type": "array",
+          "default": ["typescript", "javascript", "python", "go"],
+          "description": "Languages to analyze"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run build:extension && npm run build:webview && npm run build:graph && node scripts/copy-vendors.js",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "build:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts",
+    "build:graph": "esbuild src/webview/graph-panel/index.tsx --bundle --outfile=dist/graph-panel.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts",
+    "watch": "concurrently \"npm run watch:extension\" \"npm run watch:webview\" \"npm run watch:graph\"",
+    "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts --watch",
+    "watch:graph": "esbuild src/webview/graph-panel/index.tsx --bundle --outfile=dist/graph-panel.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts --watch",
+    "compile": "tsc --noEmit",
+    "lint": "eslint src --ext ts,tsx"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/cytoscape": "^3.19.0",
+    "concurrently": "^8.2.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "cytoscape": "^3.28.0",
+    "cytoscape-dagre": "^2.5.0",
+    "cytoscape-cose-bilkent": "^4.1.0",
+    "web-tree-sitter": "^0.22.0"
+  }
+}

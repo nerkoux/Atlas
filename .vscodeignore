@@ -1,0 +1,31 @@
+# Source files — bundled into dist/ at build time
+src/**
+scripts/**
+
+# Source maps and TypeScript artifacts
+**/*.ts
+**/*.tsx
+**/*.map
+tsconfig.json
+
+# Dev tooling
+.vscode/**
+.vscode-test/**
+.eslintrc*
+.eslintignore
+node_modules/**
+
+# Misc dev artifacts
+.gitignore
+.gitattributes
+.github/**
+.editorconfig
+*.vsix
+.vscodeignore
+
+# Atlas runtime cache
+.atlas-cache.json
+
+# OS junk
+.DS_Store
+Thumbs.db

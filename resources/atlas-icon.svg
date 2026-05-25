@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Stylized "A" mark — Atlas brand
+       Designed for VS Code activity bar (24x24) using currentColor
+       so it themes correctly across light/dark/HC modes. -->
+  <path d="M12 2.2 L21 21.8 L17.55 21.8 L15.6 17.4 L8.4 17.4 L6.45 21.8 L3 21.8 Z M9.55 14.5 L14.45 14.5 L12 8.95 Z"/>
+</svg>
