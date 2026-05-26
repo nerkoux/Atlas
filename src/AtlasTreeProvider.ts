@@ -4,7 +4,7 @@ import { GraphData, ArchitectureSystem, GraphNode } from './types';
 
 // ─── Tree Item Types ──────────────────────────────────────────────────────────
 
-type TreeItemKind = 'system' | 'folder' | 'file';
+type TreeItemKind = 'system' | 'folder' | 'file' | 'placeholder';
 
 class AtlasTreeItem extends vscode.TreeItem {
   constructor(
@@ -52,6 +52,14 @@ class AtlasTreeItem extends vscode.TreeItem {
       if (node.isDeadCode) badges.push('☠');
       if (node.dependentCount > 0) badges.push(`↑${node.dependentCount}`);
       this.description = badges.join(' ');
+    } else if (this.kind === 'placeholder') {
+      this.iconPath = new vscode.ThemeIcon('loading~spin');
+      this.tooltip = this.label;
+      this.description = '';
+      this.command = {
+        command: 'atlas.tree.refresh',
+        title: 'Refresh',
+      };
     }
   }
 }
@@ -83,11 +91,37 @@ export class AtlasTreeProvider implements vscode.TreeDataProvider<AtlasTreeItem>
   }
 
   public async getChildren(element?: AtlasTreeItem): Promise<AtlasTreeItem[]> {
-    if (!this._graphData) return [];
+    if (!this._graphData) {
+      // Show a friendly placeholder while the initial scan is running.
+      // Without this VS Code shows the generic "no data provider registered"
+      // message which makes the extension look broken.
+      if (!element) {
+        return [
+          new AtlasTreeItem(
+            'placeholder',
+            'Atlas is analysing your workspace…',
+            'placeholder:loading',
+            vscode.TreeItemCollapsibleState.None
+          ),
+        ];
+      }
+      return [];
+    }
 
     // Root level — list architectural systems
     if (!element) {
-      return this._buildSystemNodes(this._graphData.systems);
+      const systemNodes = this._buildSystemNodes(this._graphData.systems);
+      if (systemNodes.length === 0) {
+        return [
+          new AtlasTreeItem(
+            'placeholder',
+            'No systems detected — click to rescan',
+            'placeholder:empty',
+            vscode.TreeItemCollapsibleState.None
+          ),
+        ];
+      }
+      return systemNodes;
     }
 
     // System level — list folders + root files

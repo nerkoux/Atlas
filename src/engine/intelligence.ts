@@ -6,14 +6,56 @@ import {
 
 const LAYER_ORDER: ArchitecturalLayer[] = ['ui', 'api', 'service', 'data', 'infra', 'config', 'test', 'unknown'];
 
+// Order matters: tests first (they shadow other layers), then api / data
+// (which need to win over ui for things like `app/api/auth/route.ts`),
+// then service, ui, infra, config.
 const LAYER_RULES: Array<{ layer: ArchitecturalLayer; patterns: RegExp[] }> = [
-  { layer: 'ui',      patterns: [/\.(tsx|jsx)$/, /\/pages?\//i, /\/components?\//i, /\/views?\//i, /\/screens?\//i, /\/layouts?\//i, /\/ui\//i] },
-  { layer: 'api',     patterns: [/\/routes?\//i, /\/controllers?\//i, /\/handlers?\//i, /\/endpoints?\//i, /\/api\//i, /\.route\./i, /\.controller\./i] },
-  { layer: 'service', patterns: [/\/services?\//i, /\/managers?\//i, /\.service\./i, /\/usecases?\//i, /\/domain\//i] },
-  { layer: 'data',    patterns: [/\/models?\//i, /\/schemas?\//i, /\/repositories?\//i, /\/migrations?\//i, /\/entities?\//i, /\.model\./i, /\.schema\./i, /\/db\//i, /\/database\//i] },
-  { layer: 'infra',   patterns: [/\/infra\//i, /\/infrastructure\//i, /\/adapters?\//i, /\/providers?\//i, /\/clients?\//i, /\/cache\//i, /\/queue\//i] },
-  { layer: 'config',  patterns: [/\/config\//i, /\/settings?\//i, /\/constants?\//i, /\.config\./i, /\/env\//i] },
-  { layer: 'test',    patterns: [/\.test\./i, /\.spec\./i, /__tests__/i, /\/tests?\//i, /\/specs?\//i, /\/e2e\//i, /\/mocks?\//i, /\/fixtures?\//i] },
+  { layer: 'test', patterns: [
+      /\.test\./i, /\.spec\./i, /(^|\/)__tests__\//i,
+      /(^|\/)tests?\//i, /(^|\/)specs?\//i, /(^|\/)e2e\//i,
+      /(^|\/)__mocks__\//i, /(^|\/)mocks?\//i, /(^|\/)fixtures?\//i,
+    ],
+  },
+  { layer: 'api', patterns: [
+      /(^|\/)api(\/|$)/i, /(^|\/)routes?\//i, /(^|\/)controllers?\//i,
+      /(^|\/)handlers?\//i, /(^|\/)endpoints?\//i, /(^|\/)resolvers?\//i,
+      /(^|\/)graphql\//i, /(^|\/)route\.[tj]sx?$/i,
+      /\.controller\./i, /\.route\./i, /\.handler\./i,
+    ],
+  },
+  { layer: 'data', patterns: [
+      /(^|\/)models?\//i, /(^|\/)schemas?\//i, /(^|\/)entities?\//i,
+      /(^|\/)repositories?\//i, /(^|\/)repository\//i, /(^|\/)migrations?\//i,
+      /(^|\/)seeds?\//i, /(^|\/)db\//i, /(^|\/)database\//i, /(^|\/)prisma\//i,
+      /\.model\./i, /\.schema\./i, /\.entity\./i, /\.repository\./i,
+    ],
+  },
+  { layer: 'service', patterns: [
+      /(^|\/)services?\//i, /(^|\/)usecases?\//i, /(^|\/)domain\//i,
+      /(^|\/)managers?\//i, /(^|\/)_logic\//i,
+      /\.service\.[tj]sx?$/i, /\.logic\.[tj]sx?$/i, /\.normalizer(s)?\./i,
+    ],
+  },
+  { layer: 'infra', patterns: [
+      /(^|\/)infra\//i, /(^|\/)infrastructure\//i, /(^|\/)adapters?\//i,
+      /(^|\/)providers?\//i, /(^|\/)clients?\//i, /(^|\/)cache\//i,
+      /(^|\/)queue\//i, /(^|\/)integrations?\//i,
+    ],
+  },
+  { layer: 'config', patterns: [
+      /(^|\/)config\//i, /(^|\/)settings?\//i, /(^|\/)constants?\//i,
+      /(^|\/)env\//i, /\.config\.[mc]?[tj]sx?$/i, /\.env(\.|$)/i,
+      /\.types?\.[tj]sx?$/i, /(^|\/)types?\//i, /(^|\/)_types?\//i,
+      /(^|\/)validators?\//i, /\.validator(s)?\./i,
+    ],
+  },
+  { layer: 'ui', patterns: [
+      /\.(tsx|jsx)$/, /(^|\/)pages?\//i, /(^|\/)components?\//i,
+      /(^|\/)_components?\//i, /(^|\/)views?\//i, /(^|\/)screens?\//i,
+      /(^|\/)layouts?\//i, /(^|\/)widgets?\//i, /(^|\/)ui\//i,
+      /(^|\/)page\.[tj]sx?$/i, /(^|\/)layout\.[tj]sx?$/i,
+    ],
+  },
 ];
 
 export function detectLayer(relativePath: string): ArchitecturalLayer {

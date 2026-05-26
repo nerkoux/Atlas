@@ -5,6 +5,43 @@ All notable changes to the Atlas extension are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — Smarter classification & better Force layout
+
+### Added
+- **Atlas custom Force layout** for the system view — a deterministic hub-and-spoke arrangement that places the heaviest system at the centre, orbits its neighbours on auto-sized rings, and packs disconnected clusters in a balanced grid below. Replaces the generic physics simulation that left bubbles overlapping or floating in awkward positions.
+- **Smarter classifier** with strong path-anchored rules. Files like `lib/auth/*`, `lib/services/*.service.ts`, `lib/models/*`, `lib/db/*`, `_hooks/*`, `_logic/*`, `_components/*`, `validators/*`, `config/*`, `types/*`, and Next.js `app/api/*/route.ts` are now correctly grouped instead of falling into a single "Other" bucket.
+- **Folder-based fallback grouping** — anything still unclassified is grouped by its top-level directory name (e.g. `discord`, `proxy`) instead of dumping into "Other", preserving architectural shape on the graph.
+- **Validators**, **Types**, and **Tests** as first-class system buckets.
+- **Bilkent + Dagre vendor scripts** are now properly registered before use, fixing the silent extension-registration race that previously caused Hierarchy mode to fall back to breadthfirst.
+
+### Changed
+- **Tree provider switched from `registerTreeDataProvider` to `createTreeView`** so the "Atlas Architecture" panel under the native Explorer (`Ctrl+Shift+E`) populates immediately on workspace open. No more "There is no data provider registered" error.
+- **Auto-scan now triggers from extension activation**, not from the activity-bar webview's `ready` message. Opening a folder kicks off the scan whether you visit the Atlas panel first or not.
+- **Radial layout in system view** uses a degree-weighted concentric formula with `spacingFactor: 1.5`, fixing the earlier degenerate vertical-line arrangement and producing a proper radial fan.
+- **Tree shows a friendly placeholder** ("Atlas is analysing your workspace…") while the initial scan is running instead of appearing broken.
+- **Cache version bumped to v3** so existing `.atlas-cache.json` files are invalidated and re-classified with the new rules.
+
+### Fixed
+- File-view Force layout no longer overlaps system-coloured nodes thanks to `avoidOverlap` on the supported tunings.
+- Layer detection (used for layer-violation analysis) now correctly classifies `_logic/`, `_hooks/`, `_components/`, `validators/`, and Next.js route segments.
+- Force-layout drag interactions are smoother now that node positions are deterministic instead of converging from a random seed.
+
+## [0.1.2] — Performance & UX
+
+### Added
+- **Systems view** — collapses each architectural system into one bubble. Default for repos with > 150 files. Click a system to drill into its files. Scales to thousands of files.
+- **Adaptive rendering** — File view automatically switches into a "lite" profile above 300 nodes: smaller nodes, no glow shadows, edges drawn as straight lines, labels hidden until zoomed in.
+- **Graph-ready handshake** — Webview now signals readiness to the host instead of relying on a 300ms timeout, fixing the race where the graph would hang on "Building graph…" until clicked twice.
+
+### Changed
+- COSE layout iteration counts now scale with graph size (1500 → 800 → 400 for big repos) so the canvas settles instead of churning.
+- Compound parent nodes are skipped above 300 file nodes to halve element count.
+- Edge rendering uses `haystack` curves and no arrowheads on large graphs for smoother panning.
+
+### Fixed
+- Graph panel no longer drops the initial dataset on cold open.
+- Empty/zero-result systems are filtered out before rendering.
+
 ## [0.1.1] — Metadata update
 
 ### Changed

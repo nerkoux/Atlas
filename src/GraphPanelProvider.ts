@@ -4,10 +4,12 @@ import { GraphData, MessageToWebview, MessageFromWebview } from './types';
 export class AtlasGraphPanel {
   public static currentPanel: AtlasGraphPanel | undefined;
 
-  private readonly _panel: vscode.WebviewPanel;
+  private _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
   private _onOpenFile: (path: string, line?: number) => void;
+  private _pendingGraphData: GraphData | null = null;
+  private _isWebviewReady = false;
 
   public static createOrShow(
     extensionUri: vscode.Uri,
@@ -54,22 +56,35 @@ export class AtlasGraphPanel {
 
     this._panel.webview.onDidReceiveMessage(
       async (message: MessageFromWebview) => {
-        if (message.type === 'openFile') {
-          await this._onOpenFile(message.path, message.line);
+        switch (message.type) {
+          case 'graphReady':
+            this._isWebviewReady = true;
+            if (this._pendingGraphData) {
+              this._post({ type: 'graphData', data: this._pendingGraphData });
+              this._pendingGraphData = null;
+            }
+            break;
+          case 'openFile':
+            await this._onOpenFile(message.path, message.line);
+            break;
         }
       },
       null,
       this._disposables
     );
 
-    // Send data after webview initializes
-    setTimeout(() => {
-      this._post({ type: 'graphData', data: graphData });
-    }, 300);
+    // Queue the initial graph data — it will be flushed when the webview
+    // signals readiness via the `graphReady` message. Avoids the brittle
+    // setTimeout race that left users staring at "Building graph…" forever.
+    this._pendingGraphData = graphData;
   }
 
-  public update(graphData: GraphData, focusSystemId?: string): void {
-    this._post({ type: 'graphData', data: graphData });
+  public update(graphData: GraphData, _focusSystemId?: string): void {
+    if (this._isWebviewReady) {
+      this._post({ type: 'graphData', data: graphData });
+    } else {
+      this._pendingGraphData = graphData;
+    }
   }
 
   public focusNode(nodeId: string): void {
@@ -78,6 +93,8 @@ export class AtlasGraphPanel {
 
   public dispose(): void {
     AtlasGraphPanel.currentPanel = undefined;
+    this._isWebviewReady = false;
+    this._pendingGraphData = null;
     this._panel.dispose();
     while (this._disposables.length) {
       this._disposables.pop()?.dispose();
@@ -100,6 +117,9 @@ export class AtlasGraphPanel {
     );
     const cytoscapeDagreUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'dist', 'cytoscape-dagre.min.js')
+    );
+    const cytoscapeCoseBilkentUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, 'dist', 'cytoscape-cose-bilkent.min.js')
     );
     const logoUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'resources', 'atlaslogo.svg')
@@ -135,6 +155,7 @@ export class AtlasGraphPanel {
   <script nonce="${nonce}" src="${cytoscapeUri}"></script>
   <script nonce="${nonce}" src="${dagreUri}"></script>
   <script nonce="${nonce}" src="${cytoscapeDagreUri}"></script>
+  <script nonce="${nonce}" src="${cytoscapeCoseBilkentUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

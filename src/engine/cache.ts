@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { GraphData, FileCache, FileCacheEntry } from '../types';
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const CACHE_FILENAME = '.atlas-cache.json';
 
 export function getCachePath(workspaceRoot: string): string {

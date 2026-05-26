@@ -206,6 +206,7 @@ export type MessageToWebview =
 
 export type MessageFromWebview =
   | { type: 'ready' }
+  | { type: 'graphReady' }
   | { type: 'scan' }
   | { type: 'openFile'; path: string; line?: number }
   | { type: 'focusSystem'; systemId: string }

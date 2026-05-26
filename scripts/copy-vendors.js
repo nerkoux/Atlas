@@ -20,6 +20,10 @@ const vendors = [
     src: path.join(__dirname, '..', 'node_modules', 'cytoscape-dagre', 'cytoscape-dagre.js'),
     dest: path.join(distDir, 'cytoscape-dagre.min.js'),
   },
+  {
+    src: path.join(__dirname, '..', 'node_modules', 'cytoscape-cose-bilkent', 'cytoscape-cose-bilkent.js'),
+    dest: path.join(distDir, 'cytoscape-cose-bilkent.min.js'),
+  },
 ];
 
 for (const { src, dest } of vendors) {
