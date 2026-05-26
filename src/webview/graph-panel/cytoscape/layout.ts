@@ -15,6 +15,7 @@
  */
 
 import { runAtlasForceLayout } from './forceLayout';
+import { runAtlasHierarchyLayout } from './hierarchyLayout';
 import { runAtlasRadialLayout } from './radialLayout';
 
 declare const cytoscape: any;
@@ -53,6 +54,19 @@ export function runLayout(cy: any, name: LayoutName, nodeCount: number): void {
   // Force mode in system view → custom Atlas layout.
   if (actual === 'cose' && isSystemView) {
     runAtlasForceLayout(cy, { animationDuration: 600, padding: 60, bubbleGap: 80 });
+    return;
+  }
+
+  // Hierarchy mode in system view → custom Atlas Sugiyama-style layout.
+  // Replaces dagre's defaults that push orphan nodes off to the side and
+  // ignore node-size when placing ranks.
+  if ((actual === 'dagre' || actual === 'breadthfirst') && isSystemView) {
+    runAtlasHierarchyLayout(cy, {
+      animationDuration: 600,
+      padding: 60,
+      nodeGap: 70,
+      rankGap: 130,
+    });
     return;
   }
 

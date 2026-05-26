@@ -5,6 +5,19 @@ All notable changes to the Atlas extension are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — Custom Hierarchy layout & polished Radial
+
+### Added
+- **Atlas Hierarchy layout** — replaces dagre with a tailored Sugiyama-style pipeline (cycle-break → longest-path layering → barycentric reordering → size-aware coordinates). Produces clean architectural diagrams with no overlapping bubbles, deterministic placement, and rank gaps that scale with bubble size.
+- Hierarchy layout's barycentric reordering minimises edge crossings within each rank for cleaner-looking arrows.
+
+### Changed
+- **Radial layout polished**: ring-bucketing now guarantees no ring has fewer than 2 members (single-node rings looked awkward), and the centrality score (`degree × 100 + sqrt(fileCount)`) ensures the most-connected system always sits in the centre regardless of which one happens to have the most files.
+- All three system-view layouts (Force, Hierarchy, Radial) are now custom-written, deterministic, and visually consistent with each other.
+
+### Fixed
+- Hierarchy mode no longer pushes orphan (no-edge) systems to the canvas edges — they now share rank 0 with other roots.
+
 ## [0.1.4] — Custom Radial layout
 
 ### Fixed

@@ -7,13 +7,21 @@
  * small number of clean rings and distributes them evenly around each one.
  *
  * Algorithm:
- *   1. Compute a "tier" for each system from its connectedness (edge degree)
- *      and file count. Hubs get tier 0 (innermost), leaves get higher tiers.
- *   2. Bucket tiers into at most 3 rings so each ring has multiple nodes.
- *   3. Distribute each ring's members evenly around the circle, sorted by
- *      size so visually-similar bubbles end up together.
- *   4. Ring radii are computed from the largest bubble in each ring plus
- *      a configurable gap, so big bubbles never overlap their neighbours.
+ *   1. Compute a "centrality" score for each system from a normalized
+ *      combination of edge degree and file count. This survives the case
+ *      where one system has hundreds of files but few cross-system edges.
+ *   2. Pick a single hub (the highest-centrality system) when the graph
+ *      has 4+ nodes — it goes in the centre.
+ *   3. Bucket the remaining systems into at most 3 rings using the score
+ *      distribution, with a guarantee that no ring has fewer than 2 nodes
+ *      (single-node rings look awkward in radial layouts).
+ *   4. Within each ring, sort by size and interleave large/small to balance
+ *      the visual weight around the circle.
+ *   5. Compute ring radii from the largest bubble in each ring plus a gap.
+ *      The minimum radius is also bounded by the circumference required
+ *      to fit every ring member without overlap.
+ *   6. Stagger ring start angles so concentric rings never line up on the
+ *      same radial axis.
  */
 
 interface RadialNode {
@@ -28,13 +36,13 @@ interface RadialOptions {
   padding?: number;
   bubbleGap?: number;
   animationDuration?: number;
-  /** Maximum number of concentric rings. */
+  /** Maximum number of concentric rings (excluding the centre bubble). */
   maxRings?: number;
 }
 
 const DEFAULTS: Required<RadialOptions> = {
   padding: 60,
-  bubbleGap: 70,
+  bubbleGap: 80,
   animationDuration: 600,
   maxRings: 3,
 };
@@ -70,43 +78,40 @@ function collectNodes(cy: any): RadialNode[] {
   return result;
 }
 
-// ─── Step 2 — Tiering and ring placement ─────────────────────────────────────
+// ─── Step 2 — Compute positions ──────────────────────────────────────────────
 
 function computePositions(nodes: RadialNode[], opts: Required<RadialOptions>): FinalPosition[] {
-  // Single node: just centre it.
-  if (nodes.length === 1) {
-    return [{ id: nodes[0].id, x: 0, y: 0 }];
+  if (nodes.length === 1) return [{ id: nodes[0].id, x: 0, y: 0 }];
+  if (nodes.length === 2) {
+    // Two nodes: side-by-side, deterministic.
+    const distance = (nodes[0].weight + nodes[1].weight) / 2 + opts.bubbleGap;
+    const sorted = [...nodes].sort((a, b) => b.weight - a.weight);
+    return [
+      { id: sorted[0].id, x: -distance / 2, y: 0 },
+      { id: sorted[1].id, x: distance / 2, y: 0 },
+    ];
   }
 
-  // Score = how "central" a system is. High-degree systems sit closer to
-  // the centre; small disconnected systems orbit on the outer rings.
+  // Centrality score: degree dominates (×100) so an actual hub goes to the
+  // centre even if a leaf system has more files. The sqrt(fileCount) tail
+  // breaks ties between nodes of equal degree.
   const scored = nodes.map((n) => ({
     node: n,
     score: n.degree * 100 + Math.sqrt(n.fileCount),
   }));
-
-  // Sort high-score → low-score (highest-degree first).
   scored.sort((a, b) => b.score - a.score);
 
-  // The single highest-scoring system always sits at the centre (tier 0)
-  // when there are 4+ nodes. With fewer nodes we skip the centre and put
-  // everything on rings to avoid a lonely middle bubble.
   const useCentre = nodes.length >= 4;
-
   const positions: FinalPosition[] = [];
-  let ringStart = 0;
 
   if (useCentre) {
     const hub = scored[0];
     positions.push({ id: hub.node.id, x: 0, y: 0 });
-    ringStart = 1;
   }
 
-  // Distribute the remaining nodes across at most `maxRings` concentric rings.
-  const remaining = scored.slice(ringStart);
-  const ringBuckets = bucketIntoRings(remaining, opts.maxRings);
+  const orbiters = useCentre ? scored.slice(1) : scored;
+  const ringBuckets = bucketIntoRings(orbiters, opts.maxRings);
 
-  // The first ring sits outside the centre bubble (or starts from origin).
   const innerRadius = useCentre ? scored[0].node.weight / 2 + opts.bubbleGap : 0;
   let prevRadius = innerRadius;
 
@@ -115,11 +120,10 @@ function computePositions(nodes: RadialNode[], opts: Required<RadialOptions>): F
 
     const maxNode = Math.max(...ring.map((s) => s.node.weight));
 
-    // Required radius — combination of:
-    //   - previous ring + biggest node in this ring + gap
-    //   - circumference must fit all ring members without overlap
     let radius = prevRadius + maxNode / 2 + opts.bubbleGap;
 
+    // Circumference constraint — each ring member needs at least its diameter
+    // plus a fraction of the gap as arc length.
     const totalArc = ring.reduce((sum, s) => sum + s.node.weight + opts.bubbleGap * 0.7, 0);
     const minRadius = totalArc / (2 * Math.PI);
     if (minRadius > radius) radius = minRadius;
@@ -132,20 +136,17 @@ function computePositions(nodes: RadialNode[], opts: Required<RadialOptions>): F
 }
 
 /**
- * Split `scored` (already sorted by score, highest first) into `maxRings`
- * groups. Earlier groups are inner rings.
+ * Split `scored` (sorted highest first) into `maxRings` rings.
  *
- * We don't bin by score directly because that produces uneven rings when
- * scores are clustered (e.g. five systems with degree 2 and two with degree 0
- * would give a tiny inner ring and a massive outer one). Instead we slice
- * the sorted list into roughly equal chunks, with the constraint that the
- * outermost ring should always have at least 3 nodes for a clean radial fan.
+ * We don't bucket by score directly because that produces uneven rings when
+ * scores are clustered. Instead we slice the sorted list into roughly equal
+ * chunks, then rebalance so no ring ends up with one item.
  */
 function bucketIntoRings<T>(items: T[], maxRings: number): T[][] {
   if (items.length === 0) return [];
-  if (items.length <= 3) return [items];
+  if (items.length <= 4) return [items];
 
-  const targetRings = Math.min(maxRings, Math.ceil(items.length / 3));
+  const targetRings = Math.min(maxRings, Math.ceil(items.length / 4));
   const baseSize = Math.ceil(items.length / targetRings);
 
   const rings: T[][] = [];
@@ -153,11 +154,12 @@ function bucketIntoRings<T>(items: T[], maxRings: number): T[][] {
     rings.push(items.slice(i, i + baseSize));
   }
 
-  // If the last ring has only one element, merge it into the previous ring
-  // — a single-node ring looks awkward in a radial layout.
-  if (rings.length > 1 && rings[rings.length - 1].length === 1) {
-    const last = rings.pop()!;
-    rings[rings.length - 1].push(...last);
+  // Rebalance: move stragglers up so no ring has fewer than 2 items.
+  for (let i = rings.length - 1; i > 0; i--) {
+    if (rings[i].length < 2) {
+      rings[i - 1].push(...rings[i]);
+      rings.splice(i, 1);
+    }
   }
 
   return rings;
@@ -166,11 +168,9 @@ function bucketIntoRings<T>(items: T[], maxRings: number): T[][] {
 /**
  * Distribute ring members evenly around a circle of the given radius.
  *
- * - Even rings start at the top (-π/2) so the first item is always at 12 o'clock.
- * - Odd rings are offset by half an angular slice so concentric rings don't
- *   line up on the same radial axis.
- * - Within a ring, larger bubbles are interleaved with smaller ones to avoid
- *   clumping the heaviest items together.
+ * - Even rings start at the top (-π/2).
+ * - Odd rings rotate by half a slice so concentric rings don't line up.
+ * - Members are interleaved large→small→large so visual weight is balanced.
  */
 function placeOnRing(
   ring: { node: RadialNode; score: number }[],
@@ -178,9 +178,8 @@ function placeOnRing(
   positions: FinalPosition[],
   ringIndex: number
 ): void {
-  // Sort by size desc, then interleave so big and small alternate around the ring.
-  const sorted = [...ring].sort((a, b) => b.node.weight - a.node.weight);
-  const interleaved = interleaveLargeSmall(sorted);
+  const sortedDesc = [...ring].sort((a, b) => b.node.weight - a.node.weight);
+  const interleaved = interleaveLargeSmall(sortedDesc);
 
   const slice = (Math.PI * 2) / interleaved.length;
   const startAngle = -Math.PI / 2 + (ringIndex % 2 === 1 ? slice / 2 : 0);
@@ -196,7 +195,7 @@ function placeOnRing(
 }
 
 function interleaveLargeSmall<T>(sortedDesc: T[]): T[] {
-  // Take from both ends of the sorted list to alternate sizes.
+  // Take from both ends of the sorted list so big and small alternate.
   const result: T[] = [];
   let left = 0;
   let right = sortedDesc.length - 1;
