@@ -15,6 +15,7 @@
  */
 
 import { runAtlasForceLayout } from './forceLayout';
+import { runAtlasRadialLayout } from './radialLayout';
 
 declare const cytoscape: any;
 
@@ -52,6 +53,14 @@ export function runLayout(cy: any, name: LayoutName, nodeCount: number): void {
   // Force mode in system view → custom Atlas layout.
   if (actual === 'cose' && isSystemView) {
     runAtlasForceLayout(cy, { animationDuration: 600, padding: 60, bubbleGap: 80 });
+    return;
+  }
+
+  // Radial mode in system view → custom Atlas radial layout.
+  // Cytoscape's built-in concentric collapses small graphs into a vertical
+  // line because each unique ring has only one node placed at the start angle.
+  if (actual === 'concentric' && isSystemView) {
+    runAtlasRadialLayout(cy, { animationDuration: 600, padding: 60, bubbleGap: 80 });
     return;
   }
 

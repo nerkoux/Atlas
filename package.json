@@ -2,7 +2,7 @@
   "name": "atlas-architecture-explorer",
   "displayName": "Atlas — Architecture Explorer",
   "description": "Transforms repositories into navigable architectural systems. Google Maps for codebases.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "AtlasCodeVSC",
   "license": "MIT",
   "author": {

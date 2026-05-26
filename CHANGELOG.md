@@ -5,6 +5,15 @@ All notable changes to the Atlas extension are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — Custom Radial layout
+
+### Fixed
+- **Radial mode in system view no longer collapses to a vertical line.** Replaced Cytoscape's built-in `concentric` (which placed every node at the start angle when there was one node per ring) with a custom Atlas Radial layout that buckets systems into clean concentric rings, distributes them evenly around each ring, and interleaves large and small bubbles so similar sizes don't clump.
+
+### Added
+- Hubs (high-degree systems) automatically sit at the centre when the graph has 4+ systems; smaller systems orbit on outer rings.
+- Concentric rings stagger their start angles so the layout looks balanced instead of stacked along one axis.
+
 ## [0.1.3] — Smarter classification & better Force layout
 
 ### Added
