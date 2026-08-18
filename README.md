@@ -58,22 +58,6 @@ The first scan parses every file; subsequent scans only re-parse files whose has
 
 Atlas is language-agnostic internally. New languages can be added by extending the parser.
 
-### Dart & Flutter support
-
-Atlas provides first-class support for Dart and Flutter projects:
-
-- **Relative imports** - `import '../services/foo.dart';` resolved relative to the importing file
-- **Local `package:` imports** - `import 'package:my_app/services/foo.dart';` resolved via `pubspec.yaml` package names to the corresponding `lib/` directory
-- **Multi-package monorepos** - Atlas discovers all `pubspec.yaml` files in the workspace and builds a package-name to package-root lookup, enabling cross-package import resolution
-- **External packages** - `package:flutter/material.dart` and other third-party packages are marked as external dependencies (not scanned)
-- **SDK imports ignored** - `dart:async`, `dart:io`, etc. do not create internal dependency edges
-- **Generated file exclusions** - `*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.gen.dart`, `*.mocks.dart` are excluded from analysis by default
-- **Symbol detection** - public classes, mixins, enums, extensions, typedefs, and top-level functions are extracted
-- **Entry point detection** - files with a top-level `main()` function (including `bin/` scripts) are recognized as entry points
-- **Mixed-language workspaces** - a repository containing both TypeScript/JavaScript and Dart/Flutter code is analyzed together in a single scan
-
-Atlas performs source-level dependency analysis for Dart. It does not invoke the Dart Analysis Server or perform full semantic analysis.
-
 ## Getting started
 
 1. Install **Atlas — Architecture Explorer** from the VS Code Marketplace
