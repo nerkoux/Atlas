@@ -7,6 +7,7 @@ import { DependencyGraph } from './graph';
 import { classifyFiles } from './classifier';
 import { buildGraphDataV2 } from './intelligence';
 import { loadCache, saveCache, getFileCacheEntry, getDirtyFiles } from './cache';
+import { discoverDartPackages, isDartGeneratedFile, DartWorkspaceContext } from './dartParser';
 
 type ProgressCallback = (progress: ScanProgress) => void;
 
@@ -30,6 +31,10 @@ const DEFAULT_EXCLUDE_PATTERNS = [
   'out',
   '.turbo',
   '.atlas-cache.json',
+  '.dart_tool',
+  '.pub-cache',
+  '.pub',
+  '.fvm',
 ];
 
 export async function scanWorkspace(
@@ -49,22 +54,28 @@ export async function scanWorkspace(
 
   const allFiles = discoverFiles(workspaceRoot, excludeDirs, maxDepth);
 
+  // Filter out generated Dart files
+  const filteredFiles = allFiles.filter((f) => !isDartGeneratedFile(f));
+
+  // Discover Dart packages for resolving package: imports
+  const dartContext = discoverDartPackages(workspaceRoot, excludeDirs, maxDepth);
+
   // --- Incremental cache check ---
   const existingCache = loadCache(workspaceRoot);
   const fileEntries: Record<string, FileCacheEntry> = {};
-  let filesToParse = allFiles;
+  let filesToParse = filteredFiles;
 
   if (existingCache) {
-    const { added, modified, removed } = getDirtyFiles(allFiles, existingCache);
+    const { added, modified, removed } = getDirtyFiles(filteredFiles, existingCache);
     const dirtyCount = added.length + modified.length + removed.length;
     if (dirtyCount === 0) {
-      onProgress({ phase: 'complete', current: allFiles.length, total: allFiles.length, message: 'Loaded from cache (no changes)' });
+      onProgress({ phase: 'complete', current: filteredFiles.length, total: filteredFiles.length, message: 'Loaded from cache (no changes)' });
       return buildGraphDataV2(existingCache.graphData, []) as GraphData;
     }
     filesToParse = [...added, ...modified];
-    onProgress({ phase: 'parsing', current: 0, total: allFiles.length, message: `${dirtyCount} file${dirtyCount > 1 ? 's' : ''} changed, re-analyzing...` });
+    onProgress({ phase: 'parsing', current: 0, total: filteredFiles.length, message: `${dirtyCount} file${dirtyCount > 1 ? 's' : ''} changed, re-analyzing...` });
   } else {
-    onProgress({ phase: 'parsing', current: 0, total: allFiles.length, message: `Parsing ${allFiles.length} files...` });
+    onProgress({ phase: 'parsing', current: 0, total: filteredFiles.length, message: `Parsing ${filteredFiles.length} files...` });
   }
 
   const parsedFiles: FileNode[] = [];
@@ -72,10 +83,10 @@ export async function scanWorkspace(
   let parsed = 0;
 
   const BATCH_SIZE = 50;
-  for (let i = 0; i < allFiles.length; i += BATCH_SIZE) {
-    const batch = allFiles.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < filteredFiles.length; i += BATCH_SIZE) {
+    const batch = filteredFiles.slice(i, i + BATCH_SIZE);
     for (const filePath of batch) {
-      const fileNode = parseFile(filePath, workspaceRoot);
+      const fileNode = parseFile(filePath, workspaceRoot, dartContext);
       if (fileNode) {
         parsedFiles.push(fileNode);
         graph.addNode(fileNode);
@@ -88,9 +99,9 @@ export async function scanWorkspace(
     onProgress({
       phase: 'parsing',
       current: parsed,
-      total: allFiles.length,
+      total: filteredFiles.length,
       currentFile: path.relative(workspaceRoot, batch[batch.length - 1]),
-      message: `Parsed ${parsed}/${allFiles.length} files`,
+      message: `Parsed ${parsed}/${filteredFiles.length} files`,
     });
 
     await yieldToEventLoop();

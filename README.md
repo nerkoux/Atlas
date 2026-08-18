@@ -54,8 +54,25 @@ The first scan parses every file; subsequent scans only re-parse files whose has
 | Rust        | ✅      | ✅      | ✅              |
 | Java        | ✅      | ✅      | ✅              |
 | C#          | ✅      | ✅      | ✅              |
+| Dart        | ✅      | ✅      | ✅              |
 
 Atlas is language-agnostic internally. New languages can be added by extending the parser.
+
+### Dart & Flutter support
+
+Atlas provides first-class support for Dart and Flutter projects:
+
+- **Relative imports** - `import '../services/foo.dart';` resolved relative to the importing file
+- **Local `package:` imports** - `import 'package:my_app/services/foo.dart';` resolved via `pubspec.yaml` package names to the corresponding `lib/` directory
+- **Multi-package monorepos** - Atlas discovers all `pubspec.yaml` files in the workspace and builds a package-name to package-root lookup, enabling cross-package import resolution
+- **External packages** - `package:flutter/material.dart` and other third-party packages are marked as external dependencies (not scanned)
+- **SDK imports ignored** - `dart:async`, `dart:io`, etc. do not create internal dependency edges
+- **Generated file exclusions** - `*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.gen.dart`, `*.mocks.dart` are excluded from analysis by default
+- **Symbol detection** - public classes, mixins, enums, extensions, typedefs, and top-level functions are extracted
+- **Entry point detection** - files with a top-level `main()` function (including `bin/` scripts) are recognized as entry points
+- **Mixed-language workspaces** - a repository containing both TypeScript/JavaScript and Dart/Flutter code is analyzed together in a single scan
+
+Atlas performs source-level dependency analysis for Dart. It does not invoke the Dart Analysis Server or perform full semantic analysis.
 
 ## Getting started
 
@@ -91,9 +108,16 @@ All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Sh
     "**/dist/**",
     "**/build/**",
     "**/.next/**",
-    "**/__pycache__/**"
+    "**/__pycache__/**",
+    "**/.dart_tool/**",
+    "**/.pub-cache/**",
+    "**/*.g.dart",
+    "**/*.freezed.dart",
+    "**/*.gr.dart",
+    "**/*.gen.dart",
+    "**/*.mocks.dart"
   ],
-  "atlas.languages": ["typescript", "javascript", "python", "go"]
+  "atlas.languages": ["typescript", "javascript", "python", "go", "dart"]
 }
 ```
 
@@ -102,7 +126,7 @@ All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Sh
 | `atlas.autoScan`         | `true`                                   | Scan automatically when a workspace is opened              |
 | `atlas.scanDepth`        | `10`                                     | Maximum directory depth to recurse                         |
 | `atlas.excludePatterns`  | common build/cache dirs                  | Glob patterns to skip during scanning                      |
-| `atlas.languages`        | `[ts, js, py, go]`                       | Languages to analyse (controls file selection during scan) |
+| `atlas.languages`        | `[ts, js, py, go, dart]`                 | Languages to analyse (controls file selection during scan) |
 
 ## Graph interactions
 
@@ -153,6 +177,7 @@ src/
 ├── types.ts                Shared type definitions
 ├── engine/                 Language-agnostic analysis core
 │   ├── parser.ts           Per-language import/export parsing
+│   ├── dartParser.ts       Dart/Flutter-specific parsing & resolution
 │   ├── graph.ts            Dependency graph + cycle/dead-code detection
 │   ├── classifier.ts       System classification rules
 │   ├── intelligence.ts     Layer violations + dead zones + explanations
