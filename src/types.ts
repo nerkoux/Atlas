@@ -8,6 +8,7 @@ export type Language =
   | 'rust'
   | 'java'
   | 'csharp'
+  | 'dart'
   | 'unknown';
 
 export type SystemType =

@@ -54,6 +54,7 @@ The first scan parses every file; subsequent scans only re-parse files whose has
 | Rust        | ✅      | ✅      | ✅              |
 | Java        | ✅      | ✅      | ✅              |
 | C#          | ✅      | ✅      | ✅              |
+| Dart        | ✅      | ✅      | ✅              |
 
 Atlas is language-agnostic internally. New languages can be added by extending the parser.
 
@@ -65,6 +66,25 @@ Atlas is language-agnostic internally. New languages can be added by extending t
 4. Click **Scan Workspace**
 
 The first scan typically takes a few seconds for small projects and up to a minute for large monorepos. Once complete, the systems appear in the sidebar and the graph becomes available.
+
+## Local-Only Installation
+
+To install locally without using the extensions Marketplace:
+
+```bash
+# Install the packaging tool (one-time)
+npm install -g @vscode/vsce
+
+# From the Atlas project directory, build and package
+npm install
+npm run build
+vsce package
+
+# Install the generated .vsix file
+code --install-extension atlas-architecture-explorer-0.1.5.vsix
+```
+
+Restart any open VS Code windows (or run **Developer: Reload Window**) for the extension to become active. The extension will be available in all workspaces.
 
 ## Commands
 
@@ -91,9 +111,16 @@ All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Sh
     "**/dist/**",
     "**/build/**",
     "**/.next/**",
-    "**/__pycache__/**"
+    "**/__pycache__/**",
+    "**/.dart_tool/**",
+    "**/.pub-cache/**",
+    "**/*.g.dart",
+    "**/*.freezed.dart",
+    "**/*.gr.dart",
+    "**/*.gen.dart",
+    "**/*.mocks.dart"
   ],
-  "atlas.languages": ["typescript", "javascript", "python", "go"]
+  "atlas.languages": ["typescript", "javascript", "python", "go", "dart"]
 }
 ```
 
@@ -102,7 +129,7 @@ All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Sh
 | `atlas.autoScan`         | `true`                                   | Scan automatically when a workspace is opened              |
 | `atlas.scanDepth`        | `10`                                     | Maximum directory depth to recurse                         |
 | `atlas.excludePatterns`  | common build/cache dirs                  | Glob patterns to skip during scanning                      |
-| `atlas.languages`        | `[ts, js, py, go]`                       | Languages to analyse (controls file selection during scan) |
+| `atlas.languages`        | `[ts, js, py, go, dart]`                 | Languages to analyse (controls file selection during scan) |
 
 ## Graph interactions
 
@@ -153,6 +180,7 @@ src/
 ├── types.ts                Shared type definitions
 ├── engine/                 Language-agnostic analysis core
 │   ├── parser.ts           Per-language import/export parsing
+│   ├── dartParser.ts       Dart/Flutter-specific parsing & resolution
 │   ├── graph.ts            Dependency graph + cycle/dead-code detection
 │   ├── classifier.ts       System classification rules
 │   ├── intelligence.ts     Layer violations + dead zones + explanations

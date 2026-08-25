@@ -11,6 +11,7 @@ export const LANG_COLORS: Record<Language, string> = {
   rust: '#dea584',
   java: '#b07219',
   csharp: '#178600',
+  dart: '#00b4ab',
   unknown: '#64748b',
 };
 
@@ -22,5 +23,6 @@ export const LANG_LABELS: Record<Language, string> = {
   rust: 'RS',
   java: 'JV',
   csharp: 'C#',
+  dart: 'DT',
   unknown: '?',
 };

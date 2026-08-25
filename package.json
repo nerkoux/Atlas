@@ -138,7 +138,7 @@
         },
         "atlas.excludePatterns": {
           "type": "array",
-          "default": ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**", "**/.next/**", "**/__pycache__/**"],
+          "default": ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**", "**/.next/**", "**/__pycache__/**", "**/.dart_tool/**", "**/.pub-cache/**", "**/*.g.dart", "**/*.freezed.dart", "**/*.gr.dart", "**/*.gen.dart", "**/*.mocks.dart"],
           "description": "Glob patterns to exclude from scanning"
         },
         "atlas.autoScan": {
@@ -148,7 +148,7 @@
         },
         "atlas.languages": {
           "type": "array",
-          "default": ["typescript", "javascript", "python", "go"],
+          "default": ["typescript", "javascript", "python", "go", "dart"],
           "description": "Languages to analyze"
         }
       }
@@ -165,7 +165,8 @@
     "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts --watch",
     "watch:graph": "esbuild src/webview/graph-panel/index.tsx --bundle --outfile=dist/graph-panel.js --format=iife --sourcemap --loader:.tsx=tsx --loader:.ts=ts --watch",
     "compile": "tsc --noEmit",
-    "lint": "eslint src --ext ts,tsx"
+    "lint": "eslint src --ext ts,tsx",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -175,7 +176,8 @@
     "@types/cytoscape": "^3.19.0",
     "concurrently": "^8.2.0",
     "esbuild": "^0.20.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.0"
   },
   "dependencies": {
     "react": "^18.2.0",

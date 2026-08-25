@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { FileNode, ImportEntry, ExportEntry, Language } from '../types';
+import { DartWorkspaceContext, parseDartImports, parseDartExports, isDartEntryPoint } from './dartParser';
 
 export function detectLanguage(filePath: string): Language {
   const ext = path.extname(filePath).toLowerCase();
@@ -18,11 +19,12 @@ export function detectLanguage(filePath: string): Language {
     '.rs': 'rust',
     '.java': 'java',
     '.cs': 'csharp',
+    '.dart': 'dart',
   };
   return extMap[ext] ?? 'unknown';
 }
 
-export function parseFile(filePath: string, workspaceRoot: string): FileNode | null {
+export function parseFile(filePath: string, workspaceRoot: string, dartContext?: DartWorkspaceContext): FileNode | null {
   try {
     const stat = fs.statSync(filePath);
     if (!stat.isFile()) return null;
@@ -64,6 +66,11 @@ export function parseFile(filePath: string, workspaceRoot: string): FileNode | n
       imports = parseCSharpImports(content);
       exports = parseCSharpExports(content);
       isEntryPoint = content.includes('static void Main') || content.includes('static async Task Main');
+    } else if (language === 'dart') {
+      const ctx = dartContext ?? { packagesByName: new Map() };
+      imports = parseDartImports(content, filePath, workspaceRoot, ctx);
+      exports = parseDartExports(content);
+      isEntryPoint = isDartEntryPoint(content, name, relativePath);
     }
 
     return {
