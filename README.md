@@ -67,6 +67,25 @@ Atlas is language-agnostic internally. New languages can be added by extending t
 
 The first scan typically takes a few seconds for small projects and up to a minute for large monorepos. Once complete, the systems appear in the sidebar and the graph becomes available.
 
+## Local-Only Installation
+
+To install locally without using the extensions Marketplace:
+
+```bash
+# Install the packaging tool (one-time)
+npm install -g @vscode/vsce
+
+# From the Atlas project directory, build and package
+npm install
+npm run build
+vsce package
+
+# Install the generated .vsix file
+code --install-extension atlas-architecture-explorer-0.1.5.vsix
+```
+
+Restart any open VS Code windows (or run **Developer: Reload Window**) for the extension to become active. The extension will be available in all workspaces.
+
 ## Commands
 
 All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
